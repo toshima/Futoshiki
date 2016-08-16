@@ -1,4 +1,7 @@
 
+from __future__ import print_function
+
+
 # sentinel return values
 NO_SOLUTION = object()
 MULTIPLE_SOLUTIONS = object()
@@ -24,14 +27,15 @@ class PuzzleState(dict):
 
     def copy(self):
         puz = PuzzleState(self.size, self.arrows, self.display_offset)
-        puz.update(**self)
+        for k, v in self.items():
+            puz[k] = v
         return puz
 
     def is_complete(self):
         return len(self) == self.size * self.size
 
     def is_valid(self):
-        for (x, y), value in self.iteritems():
+        for (x, y), value in self.items():
             for z in [x, y, value]:
                 if not 0 <= z < self.size:
                     return False
@@ -130,12 +134,12 @@ def parse_puzzle(text, display_offset=1):
 
     initial = set()
     arrows = set()
-    n = len(lines) / 2 + 1
+    n = len(lines) // 2 + 1
     if n > 9:
         raise ValueError("Cannot parse a puzzle larger than 9x9")
 
-    for x in xrange(n):
-        for y in xrange(n):
+    for x in range(n):
+        for y in range(n):
             c = lines[2*x][2*y]
             if '1' <= c <= str(n):
                 value = int(c)
@@ -155,7 +159,8 @@ def parse_puzzle(text, display_offset=1):
                     elif c == RIGHT:
                         arrows.add(((x, y+1), (x, y)))
                     elif c != ' ':
-                        raise ValueError("Invalid char at {}, {}".format(2*x+dx, 2*y+dx))
+                        raise ValueError("Invalid char at {}, {}"
+                                         .format(2*x+dx, 2*y+dx))
 
     return n, arrows, initial
 
@@ -215,8 +220,8 @@ def solve_no_guess(puz, verbose=False):
                         possible[xy2].remove(value)
 
             if verbose:
-                print "Possible values:", xy1, ','.join(map(str, possible[xy1]))
-                print "Possible values:", xy2, ','.join(map(str, possible[xy2]))
+                print("Possible values:", xy1, *possible[xy1])
+                print("Possible values:", xy2, *possible[xy2])
 
         for x in range(puz.size):
             for subset in subsets:
@@ -230,8 +235,8 @@ def solve_no_guess(puz, verbose=False):
                             change = True
                             possible[(x, y)] -= union
                             if verbose:
-                                print "Possible values", (x, y), \
-                                    ','.join(map(str, possible[(x, y)]))
+                                print("Possible values", (x, y),
+                                      *possible[(x, y)])
 
         for y in range(puz.size):
             for subset in subsets:
@@ -245,8 +250,8 @@ def solve_no_guess(puz, verbose=False):
                             change = True
                             possible[(x, y)] -= union
                             if verbose:
-                                print "Possible values", (x, y), \
-                                    ','.join(map(str, possible[(x, y)]))
+                                print("Possible values", (x, y),
+                                      *possible[(x, y)])
 
         for xy in empty_squares:
             if len(possible[xy]) == 1:
@@ -256,8 +261,8 @@ def solve_no_guess(puz, verbose=False):
                 return NO_SOLUTION
 
         if verbose:
-            print "current state:"
-            print puz
+            print("Current state:")
+            print(puz)
 
         if not change:
             return MULTIPLE_SOLUTIONS
@@ -297,15 +302,15 @@ if __name__ == '__main__':
     for xy, value in initial:
         puz[xy] = value
 
-    print "Puzzle:"
-    print puz
+    print("Puzzle:")
+    print(puz)
 
     solution = solve(puz, verbose=args.verbose)
     if solution == NO_SOLUTION:
-        print "No solution"
+        print("No solution")
     elif solution == MULTIPLE_SOLUTIONS:
-        print "Multiple solutions"
+        print("Multiple solutions")
     else:
         assert solution.is_valid() and solution.is_complete()
-        print "Solution:"
-        print solution
+        print("Solution:")
+        print(solution)
