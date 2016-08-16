@@ -14,19 +14,19 @@ RIGHT = ">"
 
 
 class PuzzleState(dict):
-    def __init__(self, size, arrows, display_offset=1):
+    def __init__(self, size, inequalities, display_offset=1):
         self.size = size
         self.squares = [(x, y) for x in range(self.size)
                         for y in range(self.size)]
 
-        self.arrows = arrows
-        for (x1, y1), (x2, y2) in arrows:
+        self.inequalities = inequalities
+        for (x1, y1), (x2, y2) in inequalities:
             if abs(x1 - x2) + abs(y1 - y2) != 1:
                 raise ValueError()
         self.display_offset = display_offset
 
     def copy(self):
-        puz = PuzzleState(self.size, self.arrows, self.display_offset)
+        puz = PuzzleState(self.size, self.inequalities, self.display_offset)
         for k, v in self.items():
             puz[k] = v
         return puz
@@ -40,7 +40,7 @@ class PuzzleState(dict):
                 if not 0 <= z < self.size:
                     return False
 
-        for k1, k2 in self.arrows:
+        for k1, k2 in self.inequalities:
             if k1 in self and k2 in self and self[k1] >= self[k2]:
                 return False
 
@@ -76,9 +76,9 @@ class PuzzleState(dict):
 
                 if y < self.size - 1:
                     right = (x, y+1)
-                    if (xy, right) in self.arrows:
+                    if (xy, right) in self.inequalities:
                         out += LEFT
-                    elif (right, xy) in self.arrows:
+                    elif (right, xy) in self.inequalities:
                         out += RIGHT
                     else:
                         out += " "
@@ -88,9 +88,9 @@ class PuzzleState(dict):
                 for y in range(self.size):
                     xy = x, y
                     down = (x+1, y)
-                    if (xy, down) in self.arrows:
+                    if (xy, down) in self.inequalities:
                         out += UP
-                    elif (down, xy) in self.arrows:
+                    elif (down, xy) in self.inequalities:
                         out += DOWN
                     else:
                         out += " "
@@ -100,7 +100,7 @@ class PuzzleState(dict):
 
 
 def test_puzzle_state():
-    arrows = [
+    inequalities = [
         ((1, 2), (0, 2)),
         ((1, 3), (2, 3)),
         ((3, 0), (3, 1)),
@@ -110,7 +110,7 @@ def test_puzzle_state():
         ((4, 4), (4, 3)),
     ]
 
-    puz = PuzzleState(5, arrows)
+    puz = PuzzleState(5, inequalities)
     puz[(0, 2)] = 3
     puz[(0, 3)] = 0
     puz[(4, 2)] = 2
@@ -132,8 +132,8 @@ def parse_puzzle(text, display_offset=1):
                 raise ValueError("Line {} is the wrong length".format(i))
         lines[i] = str.ljust(line, len(lines))
 
-    initial = set()
-    arrows = set()
+    initial_numbers = set()
+    inequalities = set()
     n = len(lines) // 2 + 1
     if n > 9:
         raise ValueError("Cannot parse a puzzle larger than 9x9")
@@ -143,7 +143,7 @@ def parse_puzzle(text, display_offset=1):
             c = lines[2*x][2*y]
             if '1' <= c <= str(n):
                 value = int(c)
-                initial.add(((x, y), value-display_offset))
+                initial_numbers.add(((x, y), value-display_offset))
             elif c != EMPTY:
                 raise ValueError("Invalid char at {}, {}".format(2*x, 2*y))
 
@@ -151,18 +151,18 @@ def parse_puzzle(text, display_offset=1):
                 if 2*x+dx < len(lines) and 2*y+dy < len(lines):
                     c = lines[2*x+dx][2*y+dy]
                     if c == UP:
-                        arrows.add(((x, y), (x+1, y)))
+                        inequalities.add(((x, y), (x+1, y)))
                     elif c == DOWN:
-                        arrows.add(((x+1, y), (x, y)))
+                        inequalities.add(((x+1, y), (x, y)))
                     elif c == LEFT:
-                        arrows.add(((x, y), (x, y+1)))
+                        inequalities.add(((x, y), (x, y+1)))
                     elif c == RIGHT:
-                        arrows.add(((x, y+1), (x, y)))
+                        inequalities.add(((x, y+1), (x, y)))
                     elif c != ' ':
                         raise ValueError("Invalid char at {}, {}"
                                          .format(2*x+dx, 2*y+dx))
 
-    return n, arrows, initial
+    return n, inequalities, initial_numbers
 
 
 def solve(puz, verbose=False):
@@ -183,6 +183,7 @@ def solve(puz, verbose=False):
                         if copy.is_valid():
                             queue.insert(0, copy)
         elif solution != NO_SOLUTION:
+
             # puzzle is solved
             return solution
 
@@ -203,7 +204,7 @@ def solve_no_guess(puz, verbose=False):
     while not puz.is_complete():
         change = False
         empty_squares = [xy for xy in puz.squares if xy not in puz]
-        for xy1, xy2 in puz.arrows:
+        for xy1, xy2 in puz.inequalities:
             if not possible[xy1] or not possible[xy2]:
                 return NO_SOLUTION
             if xy1 not in puz:
@@ -270,14 +271,6 @@ def solve_no_guess(puz, verbose=False):
     return puz
 
 
-class NoSolution(Exception):
-    pass
-
-
-class MultipleSolutions(Exception):
-    pass
-
-
 def power_set(l):
     if not l:
         yield set()
@@ -297,12 +290,13 @@ if __name__ == '__main__':
     with open(args.puzzle, 'r') as f:
         puzzle = f.read()
 
-    size, arrows, initial = parse_puzzle(puzzle)
-    puz = PuzzleState(size, arrows)
-    for xy, value in initial:
+    size, inequalities, initial_numbers = parse_puzzle(puzzle)
+    puz = PuzzleState(size, inequalities)
+    for xy, value in initial_numbers:
         puz[xy] = value
 
     print("Puzzle:")
+    print()
     print(puz)
 
     solution = solve(puz, verbose=args.verbose)
@@ -313,4 +307,5 @@ if __name__ == '__main__':
     else:
         assert solution.is_valid() and solution.is_complete()
         print("Solution:")
+        print()
         print(solution)

@@ -12,6 +12,7 @@ Initially the script attempts to use human-like logic (AB elimination and restri
 
     $ python solve_futoshiki.py puzzle1.txt
     Puzzle:
+
     . .>. . .
           v
     . . . . .
@@ -24,6 +25,7 @@ Initially the script attempts to use human-like logic (AB elimination and restri
 
 
     Solution:
+
     1 4>3 2 5
           v
     5 3 2 1 4
