@@ -224,6 +224,29 @@ def solve_no_guess(puz, verbose=False):
                 print("Possible values:", xy1, *possible[xy1])
                 print("Possible values:", xy2, *possible[xy2])
 
+        for outerLeft, outerRight in puz.inequalities:
+            for innerLeft, innerRight in puz.inequalities:
+                if outerLeft != innerLeft and outerRight == innerRight and outerRight not in puz:
+                    if outerLeft[0] == innerLeft[0] or outerLeft[1] == innerLeft[1]:
+                        lower_bound_outer = puz.get(outerLeft, min(possible[outerLeft]))
+                        lower_bound_inner = puz.get(innerLeft, min(possible[innerLeft]))
+                        if lower_bound_outer == lower_bound_inner:
+                            lower_bound = lower_bound_outer + 1
+                            for value in range(puz.size):
+                                if value <= lower_bound and value in possible[outerRight]:
+                                    change = True
+                                    possible[outerRight].remove(value)
+                elif outerLeft == innerLeft and outerRight != innerRight and outerLeft not in puz:
+                    if outerRight[0] == innerRight[0] or outerRight[1] == innerRight[1]:
+                        upper_bound_outer = puz.get(outerRight, max(possible[outerRight]))
+                        upper_bound_inner = puz.get(innerRight, max(possible[innerRight]))
+                        if upper_bound_outer == upper_bound_inner:
+                            upper_bound = upper_bound_outer - 1
+                            for value in range(puz.size):
+                                if value >= upper_bound and value in possible[outerLeft]:
+                                    change = True
+                                    possible[outerLeft].remove(value)
+
         for x in range(puz.size):
             for subset in subsets:
                 union = set.union(*(possible[(x, y)] for y in subset))
